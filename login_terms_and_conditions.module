@@ -1,0 +1,101 @@
+<?php
+/**
+ * @file
+ * Adds terms and conditions along with checkbox to agree to them at login.  User block
+ * only at this point in time.
+ *
+ * TODO: /user login
+*/
+
+/**
+ * Implement hook_help().
+ */
+function login_terms_and_conditions_help($path, $arg) {
+ switch ($path) {
+   case 'admin/help#login_terms_and_conditions':
+     return '<p>'.  t('Shows terms and conditions at login') .'</p>';
+     break;
+ }
+} 
+
+/**
+* Implement hook_menu().
+*/
+function login_terms_and_conditions_menu() {
+  $items = array();
+
+	$items['admin/config/people/login_terms_and_conditions'] = array(
+	  'title' => 'Terms and Conditions',
+	  'description' => 'Configuration for Terms and Conditions',
+	  'page callback' => 'drupal_get_form',
+	  'page arguments' => array('login_terms_and_conditions_form'),
+	  'access arguments' => array('access administration pages'),
+	  'type' => MENU_NORMAL_ITEM,
+	);
+	
+	return $items;
+}
+
+function login_terms_and_conditions_form($form, &$form_state) {
+  $form['login_terms_and_conditions_name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Language Heading'),
+    '#default_value' => variable_get('login_terms_and_conditions_name', 'Terms of Use'),
+    '#size' => 50,
+    '#maxlength' => 1000,
+    '#description' => t('Heading for the terms to be displayed'),
+  );
+  
+  $form['login_terms_and_conditions_terms'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Terms'),
+    '#default_value' => variable_get('login_terms_and_conditions_terms', 'Terms and conditons for login.'),
+    '#size' => 50,
+    '#rows' => 20,
+    '#maxlength' => 1000,
+    '#description' => t('Terms and conditions go here.'),
+    '#required' => TRUE,
+  );
+  
+  $form['login_terms_and_conditions_agreelang'] = array(
+    '#type' => 'textfield',
+    '#title' => t('I Agree Language'),
+    '#default_value' => variable_get('login_terms_and_conditions_agreelang', 'I Agree'),
+    '#size' => 50,
+    '#maxlength' => 1000,
+    '#description' => t('The I Agree language goes here.'),
+  );
+
+  return system_settings_form($form);
+}
+
+function login_terms_and_conditions_form_alter(&$form, &$form_state, $form_id) {
+  //debugging help
+  //print_r($form_id);
+  //print_r(get_defined_vars());
+    
+  if ($form_id == 'user_login_block' OR $form_id == 'user_login') {
+  	//debugging help
+  	//print '<pre>';
+  	//print_r($form);
+ 	//print '</pre>';    
+     $form['links']['#markup']  = '';
+     
+     $form['toa_agree'] = array(
+    	'#type' => 'item',
+    	'#title' => variable_get('login_terms_and_conditions_name'),
+		'#markup' => variable_get('login_terms_and_conditions_terms'),
+    ); 
+     
+     $form['toa_validate'] = array(
+    	'#type' => 'checkbox', 
+   		'#title' => variable_get('login_terms_and_conditions_agreelang'),
+    	'#element_validate' => array('_form_overrides_toa_validate'),
+    ); 
+  } 
+}
+function _form_overrides_toa_validate($element, &$form_state, $form) {  
+  if(empty($element['#value'])) {  
+    form_set_error('user_login_block', t('You must agree to the Terms to login to this website.'));  
+  } 
+}
